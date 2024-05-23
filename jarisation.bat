@@ -5,7 +5,7 @@ set "lib=%currentDir%lib"
 set "bin=%currentDir%bin"
 set "src=%currentDir%src"
 
-set "testlib=C:\Users\nyxra\OneDrive\Bureau\ITU\s4\web Dyn\FrameWork\TestFrameWork\lib"
+set "testlib=C:\Program Files\Apache Software Foundation\Tomcat 10.1\webapps\temp\WEB-INF\lib"
 
 : complilation
 echo "debut de la compilation"
