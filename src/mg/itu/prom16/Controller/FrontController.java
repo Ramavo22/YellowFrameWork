@@ -3,7 +3,9 @@ package mg.itu.prom16.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -11,24 +13,26 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import mg.itu.prom16.utilities.Function;
+import mg.itu.prom16.utilities.Mapping;
 
 public class FrontController extends HttpServlet{
-    Boolean checked = false;
     List<Class<?>> liste;
+    HashMap<String, Mapping> urlpattern;
+    
     public void init() throws ServletException {
         super.init();
         findController();
-        
     }
     public void findController(){
-        if(!checked){
-            try {
-                liste = Function.ScanPackage(getInitParameter("controllerName"));    
-            } catch (Exception e) {
-                e.printStackTrace();
-                liste = new ArrayList<>();
-            }
+        try {
+            liste = Function.ScanPackage(getInitParameter("controllerName"));  
+            urlpattern = Function.getUrlController(liste);
+              
+        } catch (Exception e) {
+            e.printStackTrace();
+            liste = new ArrayList<>();
         }
+        
     }
     
     
@@ -44,13 +48,17 @@ public class FrontController extends HttpServlet{
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws IOException{
         resp.setContentType("text/plain");
         PrintWriter out = resp.getWriter();
-        if(liste.isEmpty()){
-            out.println("Tsisy ltyh ah, tsisy");
+        String[] listeUrl=req.getRequestURI().split("/");
+        if(listeUrl.length < 3){
+            out.println("choisir le controller");
         }
         else{
-            out.println("Liste controllers");
-            for (Class<?> class1 : liste) {
-                out.println(class1.getSimpleName());
+            Mapping m = urlpattern.get(listeUrl[2]);
+            if(m == null){
+                out.println("Tsy misy ltyh ah");
+            }
+            else{
+                m.show(out);
             }
         }
     }

@@ -3,15 +3,18 @@ package mg.itu.prom16.utilities;
 import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
 
 import mg.itu.prom16.annotation.Controller_Y;
+import mg.itu.prom16.annotation.Get_Y;
 
 public class Function {
     // control des annotations
@@ -57,6 +60,29 @@ public class Function {
             }
         }
         return classes;
+        
+    }
+
+    public static HashMap<String,Mapping> getUrlController(List<Class<?>> listeController){
+        HashMap<String,Mapping> valiny = new HashMap<>();
+        // parcourir les controlllers
+        for (Class<?> controller : listeController) {
+            String className = controller.getSimpleName();
+            // avoir la liste methode dans le controllers
+            Method[] listeMethod = controller.getMethods();
+            // parcourir chaque methode dans le controllers
+            for (Method method : listeMethod) {
+                // si annotée
+                if(method.isAnnotationPresent(Get_Y.class)){
+                    Get_Y annotationMethode = method.getAnnotation(Get_Y.class);
+                    String url = annotationMethode.url();
+                    String methodename = method.getName();
+                    Mapping map = new Mapping(className, methodename);
+                    valiny.put(url, map);
+                }
+            }
+        }
+        return valiny;
     }
 
    
