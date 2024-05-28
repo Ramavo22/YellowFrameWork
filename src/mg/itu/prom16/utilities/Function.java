@@ -67,7 +67,6 @@ public class Function {
         HashMap<String,Mapping> valiny = new HashMap<>();
         // parcourir les controlllers
         for (Class<?> controller : listeController) {
-            String className = controller.getSimpleName();
             // avoir la liste methode dans le controllers
             Method[] listeMethod = controller.getMethods();
             // parcourir chaque methode dans le controllers
@@ -76,14 +75,24 @@ public class Function {
                 if(method.isAnnotationPresent(Get_Y.class)){
                     Get_Y annotationMethode = method.getAnnotation(Get_Y.class);
                     String url = annotationMethode.url();
-                    String methodename = method.getName();
-                    Mapping map = new Mapping(className, methodename);
+                    Mapping map = new Mapping(controller, method);
                     valiny.put(url, map);
                 }
             }
         }
         return valiny;
     }
+
+        public static Object executeMethode(Mapping map,Object... args) {
+        try {
+            return map.getMethod().invoke(map.getClassName().newInstance(),args);
+        } catch ( Exception e) {
+            e.printStackTrace();
+            System.out.println(e.getMessage());
+            return e.toString();
+        }
+    }
+
 
    
 

@@ -1,30 +1,38 @@
 package mg.itu.prom16.utilities;
 
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 
 public class Mapping {
-    String className;
-    String methodName;
-    public String getClassName() {
+    Class<?> className;
+    Method method;
+
+    public Class<?> getClassName() {
         return className;
     }
-    public void setClassName(String className) {
+
+    public void setClassName(Class<?> className) {
         this.className = className;
     }
-    public String getMethodName() {
-        return methodName;
+
+    public Method getMethod() {
+        return method;
     }
-    public void setMethodName(String methodName) {
-        this.methodName = methodName;
+
+    public void setMethod(Method method) {
+        this.method = method;
     }
-    public Mapping(String className, String methodName) {
-        setClassName(className);
-        setMethodName(methodName);
+
+    
+
+    public Mapping(Class<?> className, Method method) {
+        this.className = className;
+        this.method = method;
     }
 
     public void show(PrintWriter out){
-        out.println("Class: "+this.getClassName());
-        out.println("Methode: "+this.getMethodName());
+        out.println("Class: "+this.getClassName().getSimpleName());
+        out.println("Methode: "+this.getMethod().getName());
     }
     
 }
