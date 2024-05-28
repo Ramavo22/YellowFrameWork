@@ -58,7 +58,7 @@ public class FrontController extends HttpServlet{
                 out.println("Tsy misy ltyh ah");
             }
             else{
-                m.show(out);
+                out.println(Function.executeMethode(m));
             }
         }
     }
