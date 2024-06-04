@@ -31,6 +31,3 @@ jar cvf YellowFrameWork.jar -C "%bin%" .
 echo "export to jar Done!"
 : copie to TestFrameWork
 copy YellowFrameWork.jar "%testlib%"
-
-pause
-
