@@ -83,15 +83,9 @@ public class Function {
         return valiny;
     }
 
-        public static Object executeMethode(Mapping map,Object... args) {
-        try {
+        public static Object executeMethode(Mapping map,Object... args) throws Exception{
             return map.getMethod().invoke(map.getClassName().newInstance(),args);
-        } catch ( Exception e) {
-            e.printStackTrace();
-            System.out.println(e.getMessage());
-            return e.toString();
         }
-    }
 
 
    
