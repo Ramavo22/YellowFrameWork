@@ -34,5 +34,7 @@ public class Mapping {
         out.println("Class: "+this.getClassName().getSimpleName());
         out.println("Methode: "+this.getMethod().getName());
     }
+
+   
     
 }
