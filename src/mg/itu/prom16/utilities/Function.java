@@ -12,12 +12,11 @@ import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import mg.itu.prom16.annotation.Controller_Y;
 import mg.itu.prom16.annotation.Get_Y;
+import mg.itu.prom16.annotation.Param;
 
 
 public class Function {
@@ -99,46 +98,29 @@ public class Function {
         return valiny;
     }
 
-        public static Object executeMethode(Mapping map,Object... args) throws Exception{
-            return map.getMethod().invoke(map.getClassName().newInstance(),args);
-        }
-        // public static Object executeMethode(Mapping map,HashMap<String,String> parameters)throws Exception{
-        //     Method method = map.getMethod();
-        //     Parameter[] methodParameter = method.getParameters();
-        //     Object[] args = new Object[methodParameter.length];
-        //     String parameterName = new String();
-    
-        //     for (int i = 0; i < methodParameter.length; i++) {
-        //         if(methodParameter[i].isAnnotationPresent(Param.class)){
-        //             Param param = methodParameter[i].getAnnotation(Param.class);
-        //             parameterName = param.name();
-        //         }
-        //         else {
-        //             parameterName = methodParameter[i].getName();
-        //         }
-        //         String value = parameters.get(parameterName);
-        //         System.out.println(parameterName);
-        //         args[i] =  value;
-        //     }
-    
-        //     return Function.executeMethode(map, args);
-        // }
+    public static Object executeMethode(Mapping map,Object... args) throws Exception{
+        return map.getMethod().invoke(map.getClassName().newInstance(),args);
+    }
+    public static Object executeMethode(Mapping map,HashMap<String,String> parameters)throws Exception{
+        Method method = map.getMethod();
+        Parameter[] methodParameter = method.getParameters();
+        Object[] args = new Object[methodParameter.length];
+        String parameterName = new String();
 
-        public static Map<String,Object> parameterToMap(Enumeration<String> parameterNames,HttpServletRequest req){
-            Map<String, Object> parametersMap = new HashMap<>();
-            while (parameterNames.hasMoreElements()) {
-                String parameter = parameterNames.nextElement();
-                // Assuming you want to retrieve the value associated with each parameter from the request
-                String parameterValue = req.getParameter(parameter);
-                parametersMap.put(parameter, parameterValue);
+        for (int i = 0; i < methodParameter.length; i++) {
+            if(methodParameter[i].isAnnotationPresent(Param.class)){
+                Param param = methodParameter[i].getAnnotation(Param.class);
+                parameterName = param.name();
             }
-            return parametersMap;
+            else {
+                parameterName = methodParameter[i].getName();
+            }
+            String value = parameters.get(parameterName);
+            System.out.println(parameterName);
+            args[i] =  value;
         }
 
-
-   
-
-
-
+        return Function.executeMethode(map, args);
+    }
     
 }
