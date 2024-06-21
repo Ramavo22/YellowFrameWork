@@ -2,6 +2,7 @@ package mg.itu.prom16.utilities;
 
 import java.io.File;
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.net.URL;
@@ -34,6 +35,13 @@ public class Function {
         Path pathRepertoireTravail = Paths.get(repertoireTravail);
         Path cheminDossierRessource = pathRepertoireTravail.resolve(dossier);
         return cheminDossierRessource;
+    }
+
+    public static String capitalizeFirstLetter(String input) {
+        if (input == null || input.isEmpty()) {
+            return input;
+        }
+        return input.substring(0, 1).toUpperCase() + input.substring(1);
     }
 
     // Liste de controller dans un packages
@@ -98,9 +106,42 @@ public class Function {
         return valiny;
     }
 
+
+    private static Object convertType(String param, Class<?> targetType,HashMap<String,String> parameters) throws Exception {
+        if (targetType == String.class) {
+            return parameters.get(param);
+        } else if (targetType == int.class || targetType == Integer.class) {
+            return (int) Integer.parseInt(parameters.get(param));
+        } else if (targetType == boolean.class || targetType == Boolean.class) {
+            return (boolean) Boolean.parseBoolean(parameters.get(param));
+        } else if (targetType == long.class || targetType == Long.class) {
+            return (long) Long.parseLong(parameters.get(param));
+        } else if (targetType == double.class || targetType == Double.class) {
+            return (double) Double.parseDouble(parameters.get(param));
+        } else if (targetType == float.class || targetType == Float.class) {
+            return (float) Float.parseFloat(parameters.get(param));
+        } else {
+            return convertCustomType(param, targetType ,parameters);
+        }
+    }
+
+    private static Object convertCustomType(String param, Class<?> targetType,HashMap<String,String> parameters) throws Exception {
+        Object instance = targetType.getDeclaredConstructor().newInstance();
+        Field[] fields = targetType.getDeclaredFields();   
+        for (Field field : fields) {
+            String fieldName = field.getName();
+            String allparam = param+"."+fieldName;
+            Object paramValue = Function.convertType(allparam,field.getType(),parameters);
+            Method m = targetType.getMethod("set"+Function.capitalizeFirstLetter(fieldName),paramValue.getClass());
+            m.invoke(instance, paramValue);
+        }
+        return instance;
+    }
+
     public static Object executeMethode(Mapping map,Object... args) throws Exception{
         return map.getMethod().invoke(map.getClassName().newInstance(),args);
     }
+
     public static Object executeMethode(Mapping map,HashMap<String,String> parameters)throws Exception{
         Method method = map.getMethod();
         Parameter[] methodParameter = method.getParameters();
@@ -115,9 +156,11 @@ public class Function {
             else {
                 parameterName = methodParameter[i].getName();
             }
-            String value = parameters.get(parameterName);
+            // String value = parameters.get(parameterName);
             System.out.println(parameterName);
-            args[i] =  value;
+            // args[i] =  value;
+            args[i] = Function.convertType(parameterName, methodParameter[i].getType(), parameters);
+            System.out.println(args[i].toString());
         }
 
         return Function.executeMethode(map, args);
