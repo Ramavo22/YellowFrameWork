@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.prom16.utilities.Function;
 import mg.itu.prom16.utilities.Mapping;
 import mg.itu.prom16.utilities.ModelView_Y;
+import mg.itu.prom16.utilities.MySession;
 
 public class FrontController extends HttpServlet{
     List<Class<?>> liste;
@@ -78,7 +79,11 @@ public class FrontController extends HttpServlet{
             }
             else{
                 try {
-                    Object val = Function.executeMethode(m,parameterValue);
+                    MySession session = null;
+                    if(Function.isMySessionArgument(m.getMethod())){
+                        session = new MySession(req.getSession());
+                    }
+                    Object val = Function.executeMethode(m,parameterValue,session);
                     // si String ou ModelView_Y
                     if(val instanceof String){
                         out.println(val); // Utilisez out.println pour envoyer la réponse au client
@@ -94,10 +99,9 @@ public class FrontController extends HttpServlet{
                     if(!(val instanceof ModelView_Y) && !(val instanceof String)){
                         out.print("Na String na ModelView_Y ny class ampiasaina");
                     }
-
-
-                } catch (Exception e) {
-                    e.printStackTrace(); // Utilisez out.println pour envoyer la réponse au client
+                } 
+                catch (Exception e){
+                    e.printStackTrace();
                 }
                 
             }
