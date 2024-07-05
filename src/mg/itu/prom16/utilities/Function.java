@@ -139,16 +139,16 @@ public class Function {
     }
 
     public static Object executeMethode(Mapping map,Object... args) throws Exception{
-        return map.getMethod().invoke(map.getClassName().newInstance(),args);
+        return map.getMethod().invoke(map.getClassName().getConstructor().newInstance(),args);
     }
 
-    public static Object executeMethode(Mapping map,HashMap<String,String> parameters)throws Exception{
+    public static Object executeMethode(Mapping map,HashMap<String,String> parameters,MySession session)throws Exception{
         Method method = map.getMethod();
         Parameter[] methodParameter = method.getParameters();
         Object[] args = new Object[methodParameter.length];
         String parameterName = new String();
-
-        for (int i = 0; i < methodParameter.length; i++) {
+        int i = 0;
+        for (i = 0; i < methodParameter.length; i++) {
             if(methodParameter[i].isAnnotationPresent(Param.class)){
                 Param param = methodParameter[i].getAnnotation(Param.class);
                 parameterName = param.name();
@@ -156,14 +156,27 @@ public class Function {
             else {
                 parameterName = methodParameter[i].getName();
             }
-            // String value = parameters.get(parameterName);
-            System.out.println(parameterName);
-            // args[i] =  value;
-            args[i] = Function.convertType(parameterName, methodParameter[i].getType(), parameters);
-            System.out.println(args[i].toString());
+            if(methodParameter[i].getType() == MySession.class){
+                args[i] = session;
+            }
+            else{
+                args[i] = Function.convertType(parameterName, methodParameter[i].getType(), parameters);
+            }
+            
         }
-
         return Function.executeMethode(map, args);
+    }
+
+    // fonction de verification de la classe MySession
+
+    public static boolean isMySessionArgument(Method m){
+        Class<?>[] argClass = m.getParameterTypes();
+        for (Class<?> class1 : argClass) {
+            if(class1 == MySession.class) {
+                return true;
+            }
+        }
+        return false;
     }
     
 }
