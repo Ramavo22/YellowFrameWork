@@ -19,7 +19,7 @@ for /F "tokens=*" %%f in (sources.txt) do (
     xcopy "%%f" "compTest"
 )
 
-javac -cp "%lib%\*" -d "%bin%" "compTest\*java"
+javac -cp "%lib%\*" -d "%bin%" compTest\*java
 
 del sources.txt
 rd /s /q "compTest" 
