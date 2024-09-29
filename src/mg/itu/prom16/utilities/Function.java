@@ -18,6 +18,7 @@ import jakarta.servlet.ServletException;
 import mg.itu.prom16.annotation.Controller_Y;
 import mg.itu.prom16.annotation.Get_Y;
 import mg.itu.prom16.annotation.Param;
+import mg.itu.prom16.annotation.RestAPI;
 
 
 public class Function {
@@ -28,6 +29,11 @@ public class Function {
     
     public static Boolean isController_Y(Object obj){
         return Function.isAnnoted(obj, Controller_Y.class);
+    }
+
+    public static Boolean isAnnotedByRestAPI(Object object){
+        // Vérifie si la méthode est annotée avec @RestAPI
+        return isAnnoted(object, RestAPI.class);
     }
 
     public static Path getPathProject(String dossier){
