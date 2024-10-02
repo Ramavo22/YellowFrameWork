@@ -2,6 +2,7 @@ package mg.itu.prom16.controller;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.lang.reflect.Method;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ public class FrontController extends HttpServlet{
             super.init();
             findController();
             mapper = new ObjectMapper();
+            
     }
     
     public void findController()throws ServletException{
@@ -62,12 +64,18 @@ public class FrontController extends HttpServlet{
 
 
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws ServletException,IOException{
+        
         resp.setContentType("application/json");
         PrintWriter out = resp.getWriter();
+
+        // split pour avoir les urlpatters
         String[] listeUrl=req.getRequestURI().split("/");
+
+        // recuperer les clés des paramètres
         Enumeration<String> parameterNames = req.getParameterNames();
+
+        // tableau associatif pour stocker les valeurs des données envoyé
         HashMap<String,String> parameterValue = new HashMap<>();
-        System.out.println("Debut");
         while (parameterNames.hasMoreElements()) {
             String paramName = parameterNames.nextElement();
             parameterValue.put(paramName, req.getParameter(paramName));
@@ -78,12 +86,17 @@ public class FrontController extends HttpServlet{
         }
         else{
             Mapping m = urlpattern.get(listeUrl[2]);
-
-            System.out.println("Nahita Controller");
             if(m == null){
                 throw new ServletException("Tsy misy ilay url "+listeUrl[2]);
             }
             else{
+
+                /*
+                 * Verb Test
+                 */
+                if(m.getVerb().compareToIgnoreCase(req.getMethod())!=0){
+                    throw new ServletException("Tsy mifanaraka ilay verb any ilay methode sy ilay nampiasainao.Ny ao amin'ny methode: "+m.getVerb()+" nefa ny http methode namiasainao dia "+req.getMethod());
+                }
                 try {
                     MySession session = null;
                     if(Function.isMySessionArgument(m.getMethod())){
@@ -94,10 +107,13 @@ public class FrontController extends HttpServlet{
                     /* 
                      * Verify if the method is annoted by @RestAPI
                      */
-
-                     System.out.println("Avant test annotation " + Function.isAnnotedByRestAPI(m.getMethod()) + " " + m.getMethod().getName());
-                    if(Function.isAnnotedByRestAPI(m.getMethod())){
-                        System.out.println("ATooooo");
+                    Method method = m.getMethod();
+                    System.err.println(Function.isMethodAnnotedByRestAPI(method));
+                    
+                    /*
+                     * If the method is Annoted by RestAPI
+                     */
+                    if(Function.isMethodAnnotedByRestAPI(method)){
                         if(val instanceof ModelView_Y){
                             ModelView_Y modelView_Y = (ModelView_Y) val;
                             String json = mapper.writeValueAsString(modelView_Y.getData());
@@ -107,7 +123,11 @@ public class FrontController extends HttpServlet{
                             out.println(mapper.writeValueAsString(val));
                         }
                     }
-                    if(!Function.isAnnotedByRestAPI(m.getMethod())){
+                    /*
+                     * If the method is not annoted by restAPI
+                     */
+
+                    if(!Function.isMethodAnnotedByRestAPI(m.getMethod())){
                         if(val instanceof String){
                             out.println(val); // Utilisez out.println pour envoyer la réponse au client
                         }

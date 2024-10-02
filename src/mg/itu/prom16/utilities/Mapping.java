@@ -6,6 +6,15 @@ import java.lang.reflect.Method;
 public class Mapping {
     Class<?> className;
     Method method;
+    String verb;
+
+    public String getVerb() {
+        return verb;
+    }
+
+    public void setVerb(String verb) {
+        this.verb = verb;
+    }
 
     public Class<?> getClassName() {
         return className;
@@ -33,6 +42,7 @@ public class Mapping {
     public void show(PrintWriter out){
         out.println("Class: "+this.getClassName().getSimpleName());
         out.println("Methode: "+this.getMethod().getName());
+        out.println("verb:"+this.getVerb());
     }
 
    

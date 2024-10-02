@@ -16,8 +16,10 @@ import java.util.List;
 
 import jakarta.servlet.ServletException;
 import mg.itu.prom16.annotation.Controller_Y;
-import mg.itu.prom16.annotation.Get_Y;
+import mg.itu.prom16.annotation.Get;
+import mg.itu.prom16.annotation.Url;
 import mg.itu.prom16.annotation.Param;
+import mg.itu.prom16.annotation.Post;
 import mg.itu.prom16.annotation.RestAPI;
 
 
@@ -31,10 +33,14 @@ public class Function {
         return Function.isAnnoted(obj, Controller_Y.class);
     }
 
-    public static Boolean isAnnotedByRestAPI(Object object){
-        // Vérifie si la méthode est annotée avec @RestAPI
-        return isAnnoted(object, RestAPI.class);
+    public static boolean isMethodAnnotedByRestAPI(Method method) {
+        return method.isAnnotationPresent(RestAPI.class);
     }
+
+    public static boolean isMethodAnnotedByUrl(Method method){
+        return method.isAnnotationPresent(Url.class);
+    }
+    
 
     public static Path getPathProject(String dossier){
         String repertoireTravail = System.getProperty("user.dir");
@@ -93,24 +99,38 @@ public class Function {
         HashMap<String,Mapping> valiny = new HashMap<>();
         // parcourir les controlllers
         for (Class<?> controller : listeController) {
+            System.out.println(controller.getName());
             // avoir la liste methode dans le controllers
             Method[] listeMethod = controller.getMethods();
             // parcourir chaque methode dans le controllers
             for (Method method : listeMethod) {
-                // si annotée
-                if(method.isAnnotationPresent(Get_Y.class)){
-                    Get_Y annotationMethode = method.getAnnotation(Get_Y.class);
+                System.out.println("\t"+method.getName()+": "+method.isAnnotationPresent(Url.class));
+                if(method.isAnnotationPresent(Url.class)){
+                    Url annotationMethode = method.getAnnotation(Url.class);
                     String url = annotationMethode.url();
                     if(valiny.containsKey(url)){
                         throw new ServletException("Efa niverina ilay url "+url+" amin'ny ity methode "+method.getName());
                     }
                     Mapping map = new Mapping(controller, method);
+                    boolean isGet = method.isAnnotationPresent(Get.class);
+                    boolean isPost = method.isAnnotationPresent(Post.class);
+                    if(isGet && isPost){
+                        throw new ServletException("Misy olana, controlleur sady get no post");
+                    }
+                    if(isPost){
+                        map.setVerb("POST");
+                    }
+                    if (isGet || (!isPost && !isGet)) {
+                        map.setVerb("GET");
+                    }
                     valiny.put(url, map);
                 }
             }
         }
         return valiny;
     }
+
+
 
 
     private static Object convertType(String param, Class<?> targetType,HashMap<String,String> parameters) throws Exception {
