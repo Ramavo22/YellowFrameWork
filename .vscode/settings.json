@@ -1,7 +1,12 @@
 {
-    "java.project.sourcePaths": ["src"],
+    "java.project.sourcePaths": [
+        "src"
+    ],
     "java.project.outputPath": "bin",
     "java.project.referencedLibraries": [
-        "lib/**/*.jar"
+        "c:\\Users\\nyxra\\OneDrive\\Bureau\\ITU\\s4\\web Dyn\\FrameWork\\YellowFrameWork\\lib\\jackson-annotations-2.9.9.jar",
+        "c:\\Users\\nyxra\\OneDrive\\Bureau\\ITU\\s4\\web Dyn\\FrameWork\\YellowFrameWork\\lib\\jackson-core-2.9.9.jar",
+        "c:\\Users\\nyxra\\OneDrive\\Bureau\\ITU\\s4\\web Dyn\\FrameWork\\YellowFrameWork\\lib\\jackson-databind-2.9.9.jar",
+        "c:\\Users\\nyxra\\OneDrive\\Bureau\\ITU\\s4\\web Dyn\\FrameWork\\YellowFrameWork\\lib\\servlet-api.jar"
     ]
 }
