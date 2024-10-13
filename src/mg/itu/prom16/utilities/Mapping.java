@@ -2,18 +2,19 @@ package mg.itu.prom16.utilities;
 
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.util.HashMap;
 
 public class Mapping {
     Class<?> className;
+    HashMap<String,Method> methods;
     Method method;
-    String verb;
 
-    public String getVerb() {
-        return verb;
+    public Method getMethod() {
+        return method;
     }
 
-    public void setVerb(String verb) {
-        this.verb = verb;
+    public void setMethod(Method method) {
+        this.method = method;
     }
 
     public Class<?> getClassName() {
@@ -24,26 +25,25 @@ public class Mapping {
         this.className = className;
     }
 
-    public Method getMethod() {
-        return method;
+    public HashMap<String, Method> getMethods() {
+        return methods;
     }
 
-    public void setMethod(Method method) {
-        this.method = method;
+    public void setMethods(HashMap<String, Method> methods) {
+        this.methods = methods;
     }
 
-    
-
-    public Mapping(Class<?> className, Method method) {
-        this.className = className;
-        this.method = method;
+    public Mapping(Class<?> className){
+        this.setClassName(className);
+        this.methods = new HashMap<>();
     }
 
-    public void show(PrintWriter out){
-        out.println("Class: "+this.getClassName().getSimpleName());
-        out.println("Methode: "+this.getMethod().getName());
-        out.println("verb:"+this.getVerb());
+
+    public Mapping(Class<?> classObj, Method method){
+        this.setClassName(classObj);
+        this.setMethod(method);
     }
+
 
    
     
