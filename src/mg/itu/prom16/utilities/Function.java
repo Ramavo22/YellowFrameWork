@@ -18,6 +18,7 @@ import jakarta.servlet.ServletException;
 import mg.itu.prom16.annotation.Controller_Y;
 import mg.itu.prom16.annotation.Get;
 import mg.itu.prom16.annotation.Url;
+import mg.itu.prom16.execption.MyExeption;
 import mg.itu.prom16.annotation.Param;
 import mg.itu.prom16.annotation.Post;
 import mg.itu.prom16.annotation.RestAPI;
@@ -57,16 +58,17 @@ public class Function {
     }
 
     // Liste de controller dans un packages
-
-    public static List<Class<?>> ScanPackage(String packageName) throws Exception,ServletException {
+    public static List<Class<?>> ScanPackage(String packageName) throws Exception {
         List<Class<?>> classes = new ArrayList<>();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         String path = packageName.replace('.', '/');
         
+       
+
         Enumeration<URL> resources = classLoader.getResources(path);
 
         if (!resources.hasMoreElements()) {
-            throw new ServletException("Package " + packageName + " does not exist.");
+            throw new MyExeption("Package " + packageName + " does not exist.", 500);
         }
 
         while (resources.hasMoreElements()) {
@@ -89,7 +91,7 @@ public class Function {
         }
         // Raha tsy misy controller ilay package
         if(classes.isEmpty()){
-            throw new ServletException("Tsy misy controller mihitsy ny package nao. Ity ilay package "+packageName);
+            throw new MyExeption("Tsy misy controller mihitsy ny package nao. Ity ilay package "+packageName, 500);
         }
         return classes;
         
@@ -97,33 +99,52 @@ public class Function {
 
     public static HashMap<String,Mapping> getUrlController(List<Class<?>> listeController)throws Exception{
         HashMap<String,Mapping> valiny = new HashMap<>();
-        // parcourir les controlllers
+        /*
+         * Check every controller if his action method is annoted by @Url
+         */
         for (Class<?> controller : listeController) {
             System.out.println(controller.getName());
-            // avoir la liste methode dans le controllers
             Method[] listeMethod = controller.getMethods();
-            // parcourir chaque methode dans le controllers
             for (Method method : listeMethod) {
                 System.out.println("\t"+method.getName()+": "+method.isAnnotationPresent(Url.class));
                 if(method.isAnnotationPresent(Url.class)){
+                    /*
+                     * Initialisation of the potential new key
+                     */
+                    String key = "";
                     Url annotationMethode = method.getAnnotation(Url.class);
                     String url = annotationMethode.url();
-                    if(valiny.containsKey(url)){
-                        throw new ServletException("Efa niverina ilay url "+url+" amin'ny ity methode "+method.getName());
-                    }
-                    Mapping map = new Mapping(controller, method);
+                    /*
+                     * Check if the method is define correctly
+                     */
                     boolean isGet = method.isAnnotationPresent(Get.class);
                     boolean isPost = method.isAnnotationPresent(Post.class);
+                    String newVerb = "";
                     if(isGet && isPost){
-                        throw new ServletException("Misy olana, controlleur sady get no post");
+                        throw new MyExeption("Misy olana, controlleur sady get no post", 500);
                     }
                     if(isPost){
-                        map.setVerb("POST");
+                       newVerb = "POST";
                     }
                     if (isGet || (!isPost && !isGet)) {
-                        map.setVerb("GET");
+                        newVerb = "GET";
                     }
-                    valiny.put(url, map);
+                    key = url+"/"+newVerb;
+                    System.out.println("\t\t"+key);
+                    /*
+                     * if the key is already used
+                     */
+                    if(valiny.containsKey(key)){
+                        throw new MyExeption("le url avec cette methode est déja utilisé ", 500);    
+                    }
+                    else{
+                        /*
+                         * new key, add value Mapping for the key
+                         */
+                        Mapping map = new Mapping(controller, method);
+                        valiny.put(key, map);
+                    }
+                    
                 }
             }
         }
@@ -179,7 +200,7 @@ public class Function {
                 Param param = methodParameter[i].getAnnotation(Param.class);
                 parameterName = param.name();
             }
-            else {
+            else{
                 parameterName = methodParameter[i].getName();
             }
             if(methodParameter[i].getType() == MySession.class){

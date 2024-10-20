@@ -3,6 +3,7 @@ package mg.itu.prom16.controller;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +15,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import mg.itu.prom16.execption.MyExeption;
 import mg.itu.prom16.utilities.Function;
 import mg.itu.prom16.utilities.Mapping;
 import mg.itu.prom16.utilities.ModelView_Y;
@@ -23,9 +25,11 @@ public class FrontController extends HttpServlet{
     List<Class<?>> liste;
     HashMap<String, Mapping> urlpattern;
     ObjectMapper mapper;
+    List<MyExeption> initMyExeptions;
     
     public void init() throws ServletException {
             super.init();
+            initMyExeptions = new ArrayList<>();
             findController();
             mapper = new ObjectMapper();
             
@@ -35,13 +39,15 @@ public class FrontController extends HttpServlet{
         String packageName= getInitParameter("controllerName");
         // raha diso anarana lery amle web.xml
         if(packageName == null){
-            throw new ServletException("verifier le Web.xml, parameter name doit etre controllerName");
+            initMyExeptions.add(new MyExeption("verifier le Web.xml, parameter name doit etre controllerName",500));  
         }
         else{
             try {
                 liste = Function.ScanPackage(packageName);
                 urlpattern = Function.getUrlController(liste);
-            
+            }
+            catch(MyExeption myE){
+                initMyExeptions.add(myE);
             }
             catch(ServletException es){
                 throw es;
@@ -64,10 +70,17 @@ public class FrontController extends HttpServlet{
 
 
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws ServletException,IOException{
-        
         resp.setContentType("application/json");
         PrintWriter out = resp.getWriter();
 
+        if(!initMyExeptions.isEmpty()){
+            for (MyExeption myExeption : initMyExeptions) {
+                resp.setStatus(myExeption.getStatusCode()); // Définit le statut HTTP
+                out.println("{\"error\": \"" + myExeption.getMessage() + "\", \"status\": " + myExeption.getStatusCode() + "}");
+            }
+            return;
+        }
+       
         // split pour avoir les urlpatters
         String[] listeUrl=req.getRequestURI().split("/");
 
@@ -85,31 +98,26 @@ public class FrontController extends HttpServlet{
             System.out.println("findController");
         }
         else{
-            Mapping m = urlpattern.get(listeUrl[2]);
+            String key = listeUrl[2]+"/"+req.getMethod();
+            Mapping m = urlpattern.get(key);
             if(m == null){
-                throw new ServletException("Tsy misy ilay url "+listeUrl[2]);
+                MyExeption ex = new MyExeption("Tsy misy ilay url/methode "+key, 404);
+                resp.setStatus(ex.getStatusCode()); // Définit le statut HTTP
+                out.println("{\"error\": \"" + ex.getMessage() + "\", \"status\": " + ex.getStatusCode() + "}");
+
             }
             else{
-
-                /*
-                 * Verb Test
-                 */
-                if(m.getVerb().compareToIgnoreCase(req.getMethod())!=0){
-                    throw new ServletException("Tsy mifanaraka ilay verb any ilay methode sy ilay nampiasainao.Ny ao amin'ny methode: "+m.getVerb()+" nefa ny http methode namiasainao dia "+req.getMethod());
-                }
-                try {
+                try { 
                     MySession session = null;
                     if(Function.isMySessionArgument(m.getMethod())){
                         session = new MySession(req.getSession());
                     }
                     Object val = Function.executeMethode(m,parameterValue,session);
-                    
                     /* 
                      * Verify if the method is annoted by @RestAPI
                      */
                     Method method = m.getMethod();
                     System.err.println(Function.isMethodAnnotedByRestAPI(method));
-                    
                     /*
                      * If the method is Annoted by RestAPI
                      */
@@ -144,10 +152,18 @@ public class FrontController extends HttpServlet{
                         }
                     }
                 } 
-                catch (Exception e){
-                    e.printStackTrace();
+                catch (MyExeption ex) {
+                    // Erreur personnalisée
+                    resp.setStatus(ex.getStatusCode()); // Définit le statut HTTP
+                    out.println("{\"error\": \"" + ex.getMessage() + "\", \"status\": " + ex.getStatusCode() + "}");
+                } catch (Exception e) {
+                    // Capture les autres exceptions
+                    resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // Définit le statut 500
+                    out.println("{\"error\": \"Erreur interne du serveur\", \"message\": \"" + e.getMessage() + "\"}");
+                    e.printStackTrace(); // Log dans la console pour le débogage
+                } finally {
+                    out.close(); // Ferme le PrintWriter
                 }
-                
             }
         }
     }
