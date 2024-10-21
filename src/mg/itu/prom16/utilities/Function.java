@@ -14,6 +14,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.ServletException;
 import mg.itu.prom16.annotation.Controller_Y;
 import mg.itu.prom16.annotation.Get;
@@ -167,7 +169,13 @@ public class Function {
             return (double) Double.parseDouble(parameters.get(param));
         } else if (targetType == float.class || targetType == Float.class) {
             return (float) Float.parseFloat(parameters.get(param));
-        } else {
+        } else if(targetType == MultipartFileHandler.class){
+            ObjectMapper mapper = new ObjectMapper();
+            System.out.println(parameters.get(param));
+            MultipartFileHandler fileHandler = mapper.readValue(parameters.get(param),MultipartFileHandler.class);
+            return fileHandler;
+        }
+        else {
             return convertCustomType(param, targetType ,parameters);
         }
     }
@@ -225,5 +233,4 @@ public class Function {
         }
         return false;
     }
-    
 }
