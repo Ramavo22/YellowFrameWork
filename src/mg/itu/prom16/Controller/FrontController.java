@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
@@ -12,15 +13,20 @@ import java.util.Map.Entry;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.MultipartConfig;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.Part;
 import mg.itu.prom16.execption.MyExeption;
 import mg.itu.prom16.utilities.Function;
 import mg.itu.prom16.utilities.Mapping;
 import mg.itu.prom16.utilities.ModelView_Y;
+import mg.itu.prom16.utilities.MultipartFileHandler;
 import mg.itu.prom16.utilities.MySession;
 
+
+@MultipartConfig
 public class FrontController extends HttpServlet{
     List<Class<?>> liste;
     HashMap<String, Mapping> urlpattern;
@@ -93,6 +99,27 @@ public class FrontController extends HttpServlet{
             String paramName = parameterNames.nextElement();
             parameterValue.put(paramName, req.getParameter(paramName));
         }
+
+        
+        String contentType = req.getContentType();
+        if (contentType != null && contentType.startsWith("multipart/form-data")) {
+            Collection<Part> parts = req.getParts();
+
+            for (Part part : parts) {
+                try {
+                    String paraName = part.getName();
+                    System.out.println(paraName+" "+part.getSubmittedFileName()+" "+part.getSize());
+                    MultipartFileHandler fileHandler = new MultipartFileHandler(part);
+                    System.out.println(mapper.writeValueAsString(fileHandler));
+                    parameterValue.put(paraName, mapper.writeValueAsString(fileHandler));
+                } catch (IOException e) {
+                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                    out.println("{\"error\": \""+e.getMessage()+"\"}");
+                }
+            }
+        }
+
+       
         if(listeUrl.length < 3){
             out.println("choisir le controller");
             System.out.println("findController");
@@ -112,6 +139,11 @@ public class FrontController extends HttpServlet{
                     if(Function.isMySessionArgument(m.getMethod())){
                         session = new MySession(req.getSession());
                     }
+                    /*
+                     * Savoir si il y a des fichier envoyer
+                     */
+                    
+                    
                     Object val = Function.executeMethode(m,parameterValue,session);
                     /* 
                      * Verify if the method is annoted by @RestAPI
@@ -144,7 +176,8 @@ public class FrontController extends HttpServlet{
                             for(Entry<String, Object> data : modelView_Y.getData().entrySet()){
                                 req.setAttribute(data.getKey(), data.getValue());
                             }
-                            // req.getRequestDispatcher(modelView_Y.getUrl()).forward(req, resp);
+                            System.out.println(modelView_Y.getUrl());
+                            req.getRequestDispatcher("/"+modelView_Y.getUrl()).forward(req, resp);
                         }
                         // si Tsy String na ModelView_Y
                         if(!(val instanceof ModelView_Y) && !(val instanceof String)){
