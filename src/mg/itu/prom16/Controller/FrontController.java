@@ -45,7 +45,7 @@ public class FrontController extends HttpServlet{
         String packageName= getInitParameter("controllerName");
         // raha diso anarana lery amle web.xml
         if(packageName == null){
-            initMyExeptions.add(new MyExeption("verifier le Web.xml, parameter name doit etre controllerName",500));  
+            initMyExeptions.add(new MyExeption("Vérifier le Web.xml, parameter name doit etre controllerName",500));  
         }
         else{
             try {
@@ -55,10 +55,7 @@ public class FrontController extends HttpServlet{
             catch(MyExeption myE){
                 initMyExeptions.add(myE);
             }
-            catch(ServletException es){
-                throw es;
-            }
-             catch (Exception e) {
+            catch (Exception e) {
                 e.printStackTrace();
             }
         }
@@ -76,13 +73,14 @@ public class FrontController extends HttpServlet{
 
 
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws ServletException,IOException{
-        resp.setContentType("application/json");
+        resp.setContentType("text/html");
         PrintWriter out = resp.getWriter();
 
         if(!initMyExeptions.isEmpty()){
             for (MyExeption myExeption : initMyExeptions) {
                 resp.setStatus(myExeption.getStatusCode()); // Définit le statut HTTP
-                out.println("{\"error\": \"" + myExeption.getMessage() + "\", \"status\": " + myExeption.getStatusCode() + "}");
+                String error = Function.generateErrorPage(myExeption,myExeption.getStatusCode());
+                out.println(error);
             }
             return;
         }
@@ -114,7 +112,7 @@ public class FrontController extends HttpServlet{
                     parameterValue.put(paraName, mapper.writeValueAsString(fileHandler));
                 } catch (IOException e) {
                     resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.println("{\"error\": \""+e.getMessage()+"\"}");
+                    out.println(Function.generateErrorPage(e, HttpServletResponse.SC_BAD_REQUEST));
                 }
             }
         }
@@ -130,7 +128,7 @@ public class FrontController extends HttpServlet{
             if(m == null){
                 MyExeption ex = new MyExeption("Tsy misy ilay url/methode "+key, 404);
                 resp.setStatus(ex.getStatusCode()); // Définit le statut HTTP
-                out.println("{\"error\": \"" + ex.getMessage() + "\", \"status\": " + ex.getStatusCode() + "}");
+                out.println(Function.generateErrorPage(ex, ex.getStatusCode()));
 
             }
             else{
@@ -188,11 +186,11 @@ public class FrontController extends HttpServlet{
                 catch (MyExeption ex) {
                     // Erreur personnalisée
                     resp.setStatus(ex.getStatusCode()); // Définit le statut HTTP
-                    out.println("{\"error\": \"" + ex.getMessage() + "\", \"status\": " + ex.getStatusCode() + "}");
+                    out.println(Function.generateErrorPage(ex, ex.getStatusCode()));
                 } catch (Exception e) {
                     // Capture les autres exceptions
                     resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // Définit le statut 500
-                    out.println("{\"error\": \"Erreur interne du serveur\", \"message\": \"" + e.getMessage() + "\"}");
+                    out.println(Function.generateErrorPage(e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
                     e.printStackTrace(); // Log dans la console pour le débogage
                 } finally {
                     out.close(); // Ferme le PrintWriter

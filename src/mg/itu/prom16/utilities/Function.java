@@ -1,6 +1,8 @@
 package mg.itu.prom16.utilities;
 
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -233,4 +235,88 @@ public class Function {
         }
         return false;
     }
+
+    static String traductionStatusCode(int statut){
+        String val = "";
+        switch (statut) {
+            case 404:
+                val = "NOT FOUND";
+                break;
+            
+            case 500: 
+                val = "INTERNAL ERROR";
+                break;
+
+            /*
+            *   tohizana
+            */
+        }
+        return val;
+    }
+
+
+     // Fonction qui prend une exception en argument et génère une page HTML
+    public static String generateErrorPage(Exception ex, int statusCode) {
+        // Convertir l'exception et son stack trace en chaîne de caractères
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ex.printStackTrace(pw);  // Imprimer la trace dans le StringWriter
+        String stackTrace = sw.toString();
+
+        // Construire le HTML avec le stack trace
+        String htmlPage = "<!DOCTYPE html>\r\n" + //
+                        "<html lang=\"fr\">\r\n" + //
+                        "<head>\r\n" + //
+                        "    <meta charset=\"UTF-8\">\r\n" + //
+                        "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\r\n" + //
+                        "    <title>Erreur</title>\r\n" + //
+                        "    <style>\r\n" + //
+                        "        body {\r\n" + //
+                        "            margin: 0;\r\n" + //
+                        "            padding: 0;\r\n" + //
+                        "            height: 100vh;\r\n" + //
+                        "            display: flex;\r\n" + //
+                        "            justify-content: center;\r\n" + //
+                        "            align-items: center;\r\n" + //
+                        "            font-family: Arial, sans-serif;\r\n" + //
+                        "            background-color: #000000;\r\n" + //
+                        "        }\r\n" + //
+                        "        .error-container {\r\n" + //
+                        "            background-color: rgb(46, 46, 46);\r\n" + //
+                        "            padding: 20px;\r\n" + //
+                        "            border-radius: 8px;\r\n" + //
+                        "            box-shadow: 0 4px 8px rgba(83, 83, 83, 0.1);\r\n" + //
+                        "            text-align: center;\r\n" + //
+                        "            color: #353535;\r\n" + //
+                        "        }\r\n" + //
+                        "        .error-container h1 {\r\n" + //
+                        "            color: #ff0000;\r\n" + //
+                        "            font-size: 48px;\r\n" + //
+                        "        }\r\n" + //
+                        "        .error-container pre {\r\n" + //
+                        "            color: #e4dfdf;\r\n" + //
+                        "            text-align: left;\r\n" + //
+                        "            background-color: #333;\r\n" + //
+                        "            padding: 10px;\r\n" + //
+                        "            border-radius: 4px;\r\n" + //
+                        "            overflow: auto;\r\n" + //
+                        "        }\r\n" + //
+                        "        .error-container p{\r\n" + //
+                        "            color: antiquewhite;\r\n" + //
+                        "        }\r\n" + //
+                        "    </style>\r\n" + //
+                        "</head>\r\n" + //
+                        "<body>\r\n" + //
+                        "    <div class=\"error-container\">\r\n" + //
+                        "        <h1>Erreur "+statusCode+":"+Function.traductionStatusCode(statusCode)+"</h1>\r\n" + //
+                        "        <p> <span style=\"color: #ff0000;\">Une errreur a été levée durant l'éxécution</span></p>\r\n" + //
+                        "        <p><strong><span style=\"color: #ff0000;\">Type de l'exception:</span></strong> "+ex.getClass()+" </p>\r\n" + //
+                        "        <pre>"+stackTrace+"</pre> <!-- Affichage de l'exception -->\r\n" + //
+                        "    </div>\r\n" + //
+                        "</body>\r\n" + //
+                        "</html>\r\n";
+        // Retourner la page HTML complète
+        return htmlPage;
+    }
 }
+
