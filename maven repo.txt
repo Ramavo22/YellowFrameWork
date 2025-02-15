@@ -1,0 +1,8 @@
+mvn install:install-file -Dfile=YellowFrameWork.jar -DgroupId=mg.itu.prom16 -DartifactId=YellowFrameWork -Dversion=1.0.0 -Dpackaging=jar -DgeneratePom=true
+
+
+<dependency>
+    <groupId>mg.itu.prom16</groupId>
+    <artifactId>YellowFrameWork</artifactId>
+    <version>1.0.0</version>
+</dependency>

@@ -169,4 +169,4 @@ et dans le formulaire, les valeur de l'attribut name sera légèrement modifier
 </form>
 ```
 
-- L'annotation *Param* n'est pas obligatoire, la valeur sera juste remplacer par 
+- L'annotation *Param* n'est pas obligatoire, la valeur sera juste remplacer par le nom de argument
