@@ -12,16 +12,15 @@ import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import jakarta.servlet.ServletException;
 import mg.itu.prom16.annotation.Controller_Y;
 import mg.itu.prom16.annotation.Get;
 import mg.itu.prom16.annotation.Url;
+import mg.itu.prom16.authentification.annotation.Authentified;
 import mg.itu.prom16.execption.MyExeption;
 import mg.itu.prom16.annotation.Param;
 import mg.itu.prom16.annotation.Post;
@@ -158,54 +157,68 @@ public class Function {
 
 
 
-    private static Object convertType(String param, Class<?> targetType,HashMap<String,String> parameters) throws Exception {
-        if (targetType == String.class) {
-            return parameters.get(param);
-        } else if (targetType == int.class || targetType == Integer.class) {
-            return (int) Integer.parseInt(parameters.get(param));
-        } else if (targetType == boolean.class || targetType == Boolean.class) {
-            return (boolean) Boolean.parseBoolean(parameters.get(param));
-        } else if (targetType == long.class || targetType == Long.class) {
-            return (long) Long.parseLong(parameters.get(param));
-        } else if (targetType == double.class || targetType == Double.class) {
-            return (double) Double.parseDouble(parameters.get(param));
-        } else if (targetType == float.class || targetType == Float.class) {
-            return (float) Float.parseFloat(parameters.get(param));
-        } else if(targetType == MultipartFileHandler.class){
-            ObjectMapper mapper = new ObjectMapper();
-            System.out.println(parameters.get(param));
-            MultipartFileHandler fileHandler = mapper.readValue(parameters.get(param),MultipartFileHandler.class);
-            return fileHandler;
+    public static Object convertType(String param, Class<?> targetType, HashMap<String, String> parameters) throws Exception {
+        if (parameters.containsKey(param)) {
+            String value = parameters.get(param);
+            if (targetType == String.class) return value;
+            if (targetType == int.class || targetType == Integer.class) return Integer.parseInt(value);
+            if (targetType == short.class || targetType == Short.class) return Short.parseShort(value);
+            if (targetType == long.class || targetType == Long.class) return Long.parseLong(value);
+            if (targetType == double.class || targetType == Double.class) return Double.parseDouble(value);
+            if (targetType == float.class || targetType == Float.class) return Float.parseFloat(value);
+            if (targetType == boolean.class || targetType == Boolean.class) return Boolean.parseBoolean(value);
+            if (targetType == byte.class || targetType == Byte.class) return Byte.parseByte(value);
+            if (targetType == char.class || targetType == Character.class) {
+                if (value.length() == 1) return value.charAt(0);
+                throw new IllegalArgumentException("Invalid char value: " + value);
+            }
         }
-        else {
-            return convertCustomType(param, targetType ,parameters);
+        // ✅ Ne convertir en objet personnalisé que si ce n'est pas une classe Java standard
+        if (!targetType.isPrimitive() && !targetType.getName().startsWith("java.") && !targetType.isArray()) {
+            return convertCustomType(param, targetType, parameters);
         }
+
+        return null; // Retourne null si le type n'est pas reconnu
     }
 
-    private static Object convertCustomType(String param, Class<?> targetType,HashMap<String,String> parameters) throws Exception {
+    public static Object convertCustomType(String param, Class<?> targetType, HashMap<String, String> parameters) throws Exception {
+
+        System.out.println("Classe à convertir: "+targetType.getName());
         Object instance = targetType.getDeclaredConstructor().newInstance();
         Field[] fields = targetType.getDeclaredFields();   
+
         for (Field field : fields) {
+            field.setAccessible(true); // Permet d'accéder aux champs privés
+
             String fieldName = field.getName();
-            String allparam = param+"."+fieldName;
-            Object paramValue = Function.convertType(allparam,field.getType(),parameters);
-            Method m = targetType.getMethod("set"+Function.capitalizeFirstLetter(fieldName),paramValue.getClass());
-            m.invoke(instance, paramValue);
+            String fieldKey = param + "." + fieldName; // Ex: "person.address.city"
+            
+            Object paramValue = convertType(fieldKey, field.getType(), parameters);
+            
+            if (paramValue != null) {
+                try {
+                    Method setter = targetType.getMethod("set" + capitalizeFirstLetter(fieldName), field.getType());
+                    setter.invoke(instance, paramValue);
+                } catch (NoSuchMethodException e) {
+                    System.out.println("Aucun setter trouvé pour " + fieldName + " dans " + targetType.getName());
+                }
+            }
         }
         return instance;
     }
+
 
     public static Object executeMethode(Mapping map,Object... args) throws Exception{
         return map.getMethod().invoke(map.getClassName().getConstructor().newInstance(),args);
     }
 
     public static Object executeMethode(Mapping map,HashMap<String,String> parameters,MySession session)throws Exception{
+        isAuthentified(map,session);
         Method method = map.getMethod();
         Parameter[] methodParameter = method.getParameters();
         Object[] args = new Object[methodParameter.length];
         String parameterName = new String();
-        int i = 0;
-        for (i = 0; i < methodParameter.length; i++) {
+        for (int i = 0; i < methodParameter.length; i++) {
             if(methodParameter[i].isAnnotationPresent(Param.class)){
                 Param param = methodParameter[i].getAnnotation(Param.class);
                 parameterName = param.name();
@@ -247,7 +260,13 @@ public class Function {
                 val = "INTERNAL ERROR";
                 break;
 
+            case 401:  
+                val = "UNAUTHORIZED";
+                break;
+            case 403:
+                val = "FORBIDDEN";
             /*
+                Unauthorized
             *   tohizana
             */
         }
@@ -318,5 +337,28 @@ public class Function {
         // Retourner la page HTML complète
         return htmlPage;
     }
+
+    public static void isAuthentified(Mapping mapping, MySession session)throws MyExeption {
+        Method method = mapping.getMethod();
+        Authentified authentified = method.getAnnotation(Authentified.class);
+
+        if (authentified != null) {
+            String[] who = authentified.who();
+            System.out.println(session);
+            Object role = session.get("role");
+
+            if (role == null) {
+                throw new MyExeption("Unauthorized: Aucun rôle en session.", 401);
+            } else if (who.length > 0) {
+                // Vérifier si le rôle de session est dans la liste `who`
+                boolean hasRole = Arrays.asList(who).contains(role.toString());
+
+                if (!hasRole) {
+                    throw new MyExeption("Forbidden: Accès refusé pour le rôle '" + role + "'.", 403);
+                }
+            }
+        }
+    }
+
 }
 
