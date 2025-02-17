@@ -21,6 +21,10 @@ Puis dans votre web.xml vous devez déclarer le servlet FrontController
         <param-value><!-- votre controller package --></param-value>
     </init-param>
 </servlet>
+<servlet-mapping>
+    <servlet-name>FrontController</servlet-name>
+    <url-pattern>/</url-pattern>
+</servlet-mapping>
 ```
 
 si vous vous demander ce qu'est le **controller package**, c'est juste le dossier où la classe controller sera déclarer. **Se réferer ci dessous**

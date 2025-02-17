@@ -133,21 +133,14 @@ public class FrontController extends HttpServlet{
             }
             else{
                 try { 
-                    MySession session = null;
-                    if(Function.isMySessionArgument(m.getMethod())){
-                        session = new MySession(req.getSession());
-                    }
-                    /*
-                     * Savoir si il y a des fichier envoyer
-                     */
-                    
-                    
+                    MySession session = new MySession(req.getSession());
+                   
                     Object val = Function.executeMethode(m,parameterValue,session);
                     /* 
                      * Verify if the method is annoted by @RestAPI
                      */
                     Method method = m.getMethod();
-                    System.err.println(Function.isMethodAnnotedByRestAPI(method));
+                    System.out.println(Function.isMethodAnnotedByRestAPI(method));
                     /*
                      * If the method is Annoted by RestAPI
                      */
