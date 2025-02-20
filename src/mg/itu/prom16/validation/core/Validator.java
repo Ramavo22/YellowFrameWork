@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 public class Validator {
     
-    public <T> ArrayList<ViolationContraite> validate(T obj) {
+    public static <T> ArrayList<ViolationContraite> validate(T obj) {
         ArrayList<ViolationContraite> violations = new ArrayList<>();
         // Prendre les attributs de la classe
         Field[] fields = obj.getClass().getDeclaredFields();

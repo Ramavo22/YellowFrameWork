@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -75,7 +76,7 @@ public class FrontController extends HttpServlet{
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws ServletException,IOException{
         resp.setContentType("text/html");
         PrintWriter out = resp.getWriter();
-
+        
         if(!initMyExeptions.isEmpty()){
             for (MyExeption myExeption : initMyExeptions) {
                 resp.setStatus(myExeption.getStatusCode()); // Définit le statut HTTP
@@ -87,6 +88,8 @@ public class FrontController extends HttpServlet{
        
         // split pour avoir les urlpatters
         String[] listeUrl=req.getRequestURI().split("/");
+        System.out.println(req.getRequestURI());
+        String url = listeUrl.length > 2 ? String.join("/", Arrays.copyOfRange(listeUrl, 2, listeUrl.length)) : "";
 
         // recuperer les clés des paramètres
         Enumeration<String> parameterNames = req.getParameterNames();
@@ -123,7 +126,7 @@ public class FrontController extends HttpServlet{
             System.out.println("findController");
         }
         else{
-            String key = listeUrl[2]+"/"+req.getMethod();
+            String key = req.getAttribute("METHOD") != null ? url+"/"+req.getAttribute("METHOD").toString() : url+"/"+req.getMethod();
             Mapping m = urlpattern.get(key);
             if(m == null){
                 MyExeption ex = new MyExeption("Tsy misy ilay url/methode "+key, 404);
@@ -135,7 +138,7 @@ public class FrontController extends HttpServlet{
                 try { 
                     MySession session = new MySession(req.getSession());
                    
-                    Object val = Function.executeMethode(m,parameterValue,session);
+                    Object val = Function.executeMethode(m,parameterValue,session,req,resp);
                     /* 
                      * Verify if the method is annoted by @RestAPI
                      */
@@ -156,7 +159,7 @@ public class FrontController extends HttpServlet{
                     }
                     /*
                      * If the method is not annoted by restAPI
-                     */
+                    */
 
                     if(!Function.isMethodAnnotedByRestAPI(m.getMethod())){
                         if(val instanceof String){
@@ -170,10 +173,13 @@ public class FrontController extends HttpServlet{
                             System.out.println(modelView_Y.getUrl());
                             req.getRequestDispatcher("/"+modelView_Y.getUrl()).forward(req, resp);
                         }
+                       
                         // si Tsy String na ModelView_Y
                         if(!(val instanceof ModelView_Y) && !(val instanceof String)){
                             out.print("Na String na ModelView_Y ny class ampiasaina");
                         }
+
+
                     }
                 } 
                 catch (MyExeption ex) {

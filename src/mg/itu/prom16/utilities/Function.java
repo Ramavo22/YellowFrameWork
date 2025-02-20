@@ -11,17 +11,24 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.prom16.annotation.Controller_Y;
 import mg.itu.prom16.annotation.Get;
 import mg.itu.prom16.annotation.Url;
 import mg.itu.prom16.authentification.annotation.Authentified;
 import mg.itu.prom16.execption.MyExeption;
+import mg.itu.prom16.validation.core.Validator;
+import mg.itu.prom16.validation.core.ViolationContraite;
 import mg.itu.prom16.annotation.Param;
 import mg.itu.prom16.annotation.Post;
 import mg.itu.prom16.annotation.RestAPI;
@@ -144,7 +151,7 @@ public class Function {
                         /*
                          * new key, add value Mapping for the key
                          */
-                        Mapping map = new Mapping(controller, method);
+                        Mapping map = new Mapping(controller, method,url);
                         valiny.put(key, map);
                     }
                     
@@ -172,7 +179,16 @@ public class Function {
                 if (value.length() == 1) return value.charAt(0);
                 throw new IllegalArgumentException("Invalid char value: " + value);
             }
+            // ✅ Ajout de la gestion des dates
+            if (targetType == LocalDate.class) {
+                return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+            }
+            if (targetType == LocalDateTime.class) {
+                return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+            }
         }
+
+
         // ✅ Ne convertir en objet personnalisé que si ce n'est pas une classe Java standard
         if (!targetType.isPrimitive() && !targetType.getName().startsWith("java.") && !targetType.isArray()) {
             return convertCustomType(param, targetType, parameters);
@@ -212,7 +228,7 @@ public class Function {
         return map.getMethod().invoke(map.getClassName().getConstructor().newInstance(),args);
     }
 
-    public static Object executeMethode(Mapping map,HashMap<String,String> parameters,MySession session)throws Exception{
+    public static Object executeMethode(Mapping map,HashMap<String,String> parameters,MySession session, HttpServletRequest request,HttpServletResponse response)throws Exception{
         isAuthentified(map,session);
         Method method = map.getMethod();
         Parameter[] methodParameter = method.getParameters();
@@ -231,6 +247,13 @@ public class Function {
             }
             else{
                 args[i] = Function.convertType(parameterName, methodParameter[i].getType(), parameters);
+                List<ViolationContraite> violationContraites = Validator.validate(args[i]);
+                if(!violationContraites.isEmpty()){
+
+                    request.setAttribute("errors", violationContraites);
+                    request.setAttribute("METHOD", "GET");
+                    request.getRequestDispatcher("/"+map.getUrl()).forward(request, response);
+                }
             }
             
         }
