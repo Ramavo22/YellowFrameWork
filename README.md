@@ -36,10 +36,12 @@ votre package sera mg.itu.mycontroller
 les principal classe que vous allez utilisé pour votre projet java EE sera les annotations
 
 - *Controller_Y*
+- ModelViewY
 - *Url*
 - *Get* et *Post*
 - *Param*
 - *RestAPI*
+
 
 ### Utilisation
 
@@ -64,6 +66,52 @@ public class MonController{
 }
 ```
 
+### ModelViewY
+
+ModelViewY est la classe qui interagit entre le client est le serveur.
+
+elle a comme attribut:
+- url (String): utiliser pour la redirection vers un autre méthode ou à une page
+- data (map<String, Object>): les data à envoyer dans la pages
+
+Fonction Important: la fonction `addObject(key,data)` permet d'ajouter un donnée 
+Exemple: 
+
+```java
+
+public ModelView_Y getIndex(){
+    /*
+     * Votre logique
+    */
+    ModelView_Y modelViewY = new ModelView_Y("index.jsp");
+    modelViewY.addObject ("message", "Ceci est un message!");
+    modelViewY.addObject ("data",myObject);
+    ...
+    
+    return modelViewY;
+}
+```
+
+les donnéer ajouter par `addObject` seront disponible sur jsp avec `request.getAttribute(key)`
+
+Pour la redirection vers un autre controller il faut preciser la methode (Verb) de la fonction en ajoutant comme donnée dans ModelView_Y de la manière suivant:
+```java
+public ModelView_Y getIndex(){
+    /*
+     * Votre logique
+    */
+    ModelView_Y modelViewY = new ModelView_Y("lien/controller");
+    modelViewY.addObject ("message", "Ceci est un message!");
+    modelViewY.addObject ("data",myObject);
+    ...
+
+    // if faut ajouter ceci...
+    modelViewY.addObject("METHOD",VERB) // GET, POST
+    
+    return modelViewY;
+}
+``` 
+
 #### 2. Url
 
 L'annotation *Url* permet de associer une action à un Url donné
@@ -76,7 +124,7 @@ Exemple
 
 ```java
 @Url(name = "monurl")
-public Object methode(){
+public ModelView_Y methode(){
     // votre logique
 }
 ```
@@ -96,13 +144,13 @@ Exemple
 ```java
 @Url(name = "monUrl")
 @Post
-public Object methode(){
+public ModelView_Y methode(){
     // votre logique
 }
 
 @Url(name = "monUrl")
 @Get
-public Object methode(){
+public ModelView_Y methode(){
     // votre logique
 }
 ```
@@ -133,7 +181,7 @@ Dans votre controller, pour traiter les donnée, vous avez:
 ```java
 @Url(name = "testform")
 @Post
-public Object formulaire(@Param(name = "anarana") String nom, @Param(name = "taona") int age){
+public ModelView_Y formulaire(@Param(name = "anarana") String nom, @Param(name = "taona") int age){
 
     // votre logique 
 }
@@ -157,7 +205,7 @@ dans le controlleur, on peut avoir l'action suivant
 ```java
 @Url(name = "testform")
 @Post
-public Object formulaire(@Param("NewPerson") Personne personne){
+public ModelView_Y formulaire(@Param("NewPerson") Personne personne){
 
     // votre logique 
 }

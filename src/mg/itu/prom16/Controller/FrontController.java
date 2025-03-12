@@ -88,7 +88,6 @@ public class FrontController extends HttpServlet{
        
         // split pour avoir les urlpatters
         String[] listeUrl=req.getRequestURI().split("/");
-        System.out.println(req.getRequestURI());
         String url = listeUrl.length > 2 ? String.join("/", Arrays.copyOfRange(listeUrl, 2, listeUrl.length)) : "";
 
         // recuperer les clés des paramètres
@@ -98,6 +97,7 @@ public class FrontController extends HttpServlet{
         HashMap<String,String> parameterValue = new HashMap<>();
         while (parameterNames.hasMoreElements()) {
             String paramName = parameterNames.nextElement();
+            System.out.println("from req.getParameterNames() "+paramName);
             parameterValue.put(paramName, req.getParameter(paramName));
         }
 
@@ -107,15 +107,18 @@ public class FrontController extends HttpServlet{
             Collection<Part> parts = req.getParts();
 
             for (Part part : parts) {
-                try {
-                    String paraName = part.getName();
-                    System.out.println(paraName+" "+part.getSubmittedFileName()+" "+part.getSize());
-                    MultipartFileHandler fileHandler = new MultipartFileHandler(part);
-                    System.out.println(mapper.writeValueAsString(fileHandler));
-                    parameterValue.put(paraName, mapper.writeValueAsString(fileHandler));
-                } catch (IOException e) {
-                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.println(Function.generateErrorPage(e, HttpServletResponse.SC_BAD_REQUEST));
+                if (part.getSubmittedFileName() != null) {
+                    try {
+                        String paraName = part.getName();
+                        System.out.println("from req.getParts() "+paraName);
+                        MultipartFileHandler fileHandler = new MultipartFileHandler(part);
+                        String jsonFile =  mapper.writeValueAsString(fileHandler);
+                        System.out.println(jsonFile);
+                        parameterValue.put(paraName,jsonFile);
+                    } catch (IOException e) {
+                        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        out.println(Function.generateErrorPage(e, HttpServletResponse.SC_BAD_REQUEST));
+                    }
                 }
             }
         }
@@ -143,7 +146,6 @@ public class FrontController extends HttpServlet{
                      * Verify if the method is annoted by @RestAPI
                      */
                     Method method = m.getMethod();
-                    System.out.println(Function.isMethodAnnotedByRestAPI(method));
                     /*
                      * If the method is Annoted by RestAPI
                      */
@@ -170,7 +172,6 @@ public class FrontController extends HttpServlet{
                             for(Entry<String, Object> data : modelView_Y.getData().entrySet()){
                                 req.setAttribute(data.getKey(), data.getValue());
                             }
-                            System.out.println(modelView_Y.getUrl());
                             req.getRequestDispatcher("/"+modelView_Y.getUrl()).forward(req, resp);
                         }
                        

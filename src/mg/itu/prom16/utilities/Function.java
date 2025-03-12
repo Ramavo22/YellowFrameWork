@@ -20,6 +20,8 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import mg.itu.prom16.annotation.Controller_Y;
@@ -165,26 +167,53 @@ public class Function {
 
 
     public static Object convertType(String param, Class<?> targetType, HashMap<String, String> parameters) throws Exception {
+        System.out.println("parameter name "+param);
         if (parameters.containsKey(param)) {
             String value = parameters.get(param);
+            System.out.println("\tparameter value:" +value);
             if (targetType == String.class) return value;
-            if (targetType == int.class || targetType == Integer.class) return Integer.parseInt(value);
-            if (targetType == short.class || targetType == Short.class) return Short.parseShort(value);
-            if (targetType == long.class || targetType == Long.class) return Long.parseLong(value);
-            if (targetType == double.class || targetType == Double.class) return Double.parseDouble(value);
-            if (targetType == float.class || targetType == Float.class) return Float.parseFloat(value);
-            if (targetType == boolean.class || targetType == Boolean.class) return Boolean.parseBoolean(value);
+            if (targetType == int.class || targetType == Integer.class) return !value.isEmpty() ? Integer.parseInt(value) : null;
+            if (targetType == short.class || targetType == Short.class) return !value.isEmpty() ? Short.parseShort(value) : null;
+            if (targetType == long.class || targetType == Long.class) return !value.isEmpty() ? Long.parseLong(value) : null;
+            if (targetType == double.class || targetType == Double.class) return !value.isEmpty() ? Double.parseDouble(value) : null ;
+            if (targetType == float.class || targetType == Float.class) return !value.isEmpty() ? Float.parseFloat(value) : null;
+            if (targetType == boolean.class || targetType == Boolean.class) return  Boolean.parseBoolean(value);
             if (targetType == byte.class || targetType == Byte.class) return Byte.parseByte(value);
             if (targetType == char.class || targetType == Character.class) {
                 if (value.length() == 1) return value.charAt(0);
                 throw new IllegalArgumentException("Invalid char value: " + value);
             }
+            if(targetType == MultipartFileHandler.class){
+                ObjectMapper mapper = new ObjectMapper();
+                System.out.println(parameters.get(param));
+                MultipartFileHandler fileHandler = mapper.readValue(parameters.get(param),MultipartFileHandler.class);
+                return fileHandler;
+            }
             // ✅ Ajout de la gestion des dates
             if (targetType == LocalDate.class) {
-                return LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+                try{
+                    LocalDate date = LocalDate.parse(value, DateTimeFormatter.ISO_LOCAL_DATE);
+                    return date;
+                }
+                catch(Exception e){
+                    if(value.isEmpty()){
+                        return null;
+                    }
+                    e.printStackTrace();
+                }
+                
             }
             if (targetType == LocalDateTime.class) {
-                return LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                try {
+                    LocalDateTime dateTime = LocalDateTime.parse(value, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+                    return dateTime;
+                } catch (Exception e) {
+                    if(value.isEmpty()){
+                        return null;
+                    }
+                    e.printStackTrace();
+                }
+               
             }
         }
 
@@ -199,7 +228,7 @@ public class Function {
 
     public static Object convertCustomType(String param, Class<?> targetType, HashMap<String, String> parameters) throws Exception {
 
-        System.out.println("Classe à convertir: "+targetType.getName());
+        
         Object instance = targetType.getDeclaredConstructor().newInstance();
         Field[] fields = targetType.getDeclaredFields();   
 
@@ -247,13 +276,17 @@ public class Function {
             }
             else{
                 args[i] = Function.convertType(parameterName, methodParameter[i].getType(), parameters);
-                List<ViolationContraite> violationContraites = Validator.validate(args[i]);
-                if(!violationContraites.isEmpty()){
+                if(!methodParameter[i].getType().getName().startsWith("java.")){
+                    List<ViolationContraite> violationContraites = Validator.validate(args[i]);
+                    if(!violationContraites.isEmpty()){
 
-                    request.setAttribute("errors", violationContraites);
-                    request.setAttribute("METHOD", "GET");
-                    request.getRequestDispatcher("/"+map.getUrl()).forward(request, response);
+                        request.setAttribute("errors", violationContraites);
+                        request.setAttribute("METHOD", "GET");
+                        request.getRequestDispatcher("/"+map.getUrl()).forward(request, response);
+                        return null;
+                    }
                 }
+                
             }
             
         }
@@ -367,7 +400,6 @@ public class Function {
 
         if (authentified != null) {
             String[] who = authentified.who();
-            System.out.println(session);
             Object role = session.get("role");
 
             if (role == null) {
