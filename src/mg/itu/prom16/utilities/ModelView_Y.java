@@ -18,8 +18,8 @@ public class ModelView_Y {
         this.data = data;
     }
 
-    public void addObject(String url, Object data){
-        getData().put(url, data);
+    public void addObject(String key, Object data){
+        getData().put(key, data);
     }
 
     public ModelView_Y(String url){

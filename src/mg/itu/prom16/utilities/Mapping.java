@@ -5,8 +5,8 @@ import java.util.HashMap;
 
 public class Mapping {
     Class<?> className;
-    HashMap<String,Method> methods;
     Method method;
+    String url;
 
     public Method getMethod() {
         return method;
@@ -24,24 +24,27 @@ public class Mapping {
         this.className = className;
     }
 
-    public HashMap<String, Method> getMethods() {
-        return methods;
+    public String getUrl() {
+        return url;
     }
 
-    public void setMethods(HashMap<String, Method> methods) {
-        this.methods = methods;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
-    public Mapping(Class<?> className){
-        this.setClassName(className);
-        this.methods = new HashMap<>();
-    }
-
-
+    
     public Mapping(Class<?> classObj, Method method){
         this.setClassName(classObj);
         this.setMethod(method);
     }
+
+    public Mapping(Class<?> className, Method method, String url) {
+        this.className = className;
+        this.method = method;
+        this.url = url;
+    }
+
+    
 
 
    

@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -75,7 +76,7 @@ public class FrontController extends HttpServlet{
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws ServletException,IOException{
         resp.setContentType("text/html");
         PrintWriter out = resp.getWriter();
-
+        
         if(!initMyExeptions.isEmpty()){
             for (MyExeption myExeption : initMyExeptions) {
                 resp.setStatus(myExeption.getStatusCode()); // Définit le statut HTTP
@@ -87,6 +88,7 @@ public class FrontController extends HttpServlet{
        
         // split pour avoir les urlpatters
         String[] listeUrl=req.getRequestURI().split("/");
+        String url = listeUrl.length > 2 ? String.join("/", Arrays.copyOfRange(listeUrl, 2, listeUrl.length)) : "";
 
         // recuperer les clés des paramètres
         Enumeration<String> parameterNames = req.getParameterNames();
@@ -95,6 +97,7 @@ public class FrontController extends HttpServlet{
         HashMap<String,String> parameterValue = new HashMap<>();
         while (parameterNames.hasMoreElements()) {
             String paramName = parameterNames.nextElement();
+            System.out.println("from req.getParameterNames() "+paramName);
             parameterValue.put(paramName, req.getParameter(paramName));
         }
 
@@ -104,15 +107,18 @@ public class FrontController extends HttpServlet{
             Collection<Part> parts = req.getParts();
 
             for (Part part : parts) {
-                try {
-                    String paraName = part.getName();
-                    System.out.println(paraName+" "+part.getSubmittedFileName()+" "+part.getSize());
-                    MultipartFileHandler fileHandler = new MultipartFileHandler(part);
-                    System.out.println(mapper.writeValueAsString(fileHandler));
-                    parameterValue.put(paraName, mapper.writeValueAsString(fileHandler));
-                } catch (IOException e) {
-                    resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                    out.println(Function.generateErrorPage(e, HttpServletResponse.SC_BAD_REQUEST));
+                if (part.getSubmittedFileName() != null) {
+                    try {
+                        String paraName = part.getName();
+                        System.out.println("from req.getParts() "+paraName);
+                        MultipartFileHandler fileHandler = new MultipartFileHandler(part);
+                        String jsonFile =  mapper.writeValueAsString(fileHandler);
+                        System.out.println(jsonFile);
+                        parameterValue.put(paraName,jsonFile);
+                    } catch (IOException e) {
+                        resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
+                        out.println(Function.generateErrorPage(e, HttpServletResponse.SC_BAD_REQUEST));
+                    }
                 }
             }
         }
@@ -123,7 +129,7 @@ public class FrontController extends HttpServlet{
             System.out.println("findController");
         }
         else{
-            String key = listeUrl[2]+"/"+req.getMethod();
+            String key = req.getAttribute("METHOD") != null ? url+"/"+req.getAttribute("METHOD").toString() : url+"/"+req.getMethod();
             Mapping m = urlpattern.get(key);
             if(m == null){
                 MyExeption ex = new MyExeption("Tsy misy ilay url/methode "+key, 404);
@@ -135,12 +141,11 @@ public class FrontController extends HttpServlet{
                 try { 
                     MySession session = new MySession(req.getSession());
                    
-                    Object val = Function.executeMethode(m,parameterValue,session);
+                    Object val = Function.executeMethode(m,parameterValue,session,req,resp);
                     /* 
                      * Verify if the method is annoted by @RestAPI
                      */
                     Method method = m.getMethod();
-                    System.out.println(Function.isMethodAnnotedByRestAPI(method));
                     /*
                      * If the method is Annoted by RestAPI
                      */
@@ -156,7 +161,7 @@ public class FrontController extends HttpServlet{
                     }
                     /*
                      * If the method is not annoted by restAPI
-                     */
+                    */
 
                     if(!Function.isMethodAnnotedByRestAPI(m.getMethod())){
                         if(val instanceof String){
@@ -167,13 +172,15 @@ public class FrontController extends HttpServlet{
                             for(Entry<String, Object> data : modelView_Y.getData().entrySet()){
                                 req.setAttribute(data.getKey(), data.getValue());
                             }
-                            System.out.println(modelView_Y.getUrl());
                             req.getRequestDispatcher("/"+modelView_Y.getUrl()).forward(req, resp);
                         }
+                       
                         // si Tsy String na ModelView_Y
                         if(!(val instanceof ModelView_Y) && !(val instanceof String)){
                             out.print("Na String na ModelView_Y ny class ampiasaina");
                         }
+
+
                     }
                 } 
                 catch (MyExeption ex) {
