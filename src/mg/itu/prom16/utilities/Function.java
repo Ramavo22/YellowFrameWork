@@ -19,6 +19,7 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Collection;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -54,7 +55,7 @@ public class Function {
         return method.isAnnotationPresent(Url.class);
     }
     
-
+    
     public static Path getPathProject(String dossier){
         String repertoireTravail = System.getProperty("user.dir");
         Path pathRepertoireTravail = Paths.get(repertoireTravail);
@@ -167,10 +168,8 @@ public class Function {
 
 
     public static Object convertType(String param, Class<?> targetType, HashMap<String, String> parameters) throws Exception {
-        System.out.println("parameter name "+param);
         if (parameters.containsKey(param)) {
             String value = parameters.get(param);
-            System.out.println("\tparameter value:" +value);
             if (targetType == String.class) return value;
             if (targetType == int.class || targetType == Integer.class) return !value.isEmpty() ? Integer.parseInt(value) : null;
             if (targetType == short.class || targetType == Short.class) return !value.isEmpty() ? Short.parseShort(value) : null;
@@ -185,7 +184,6 @@ public class Function {
             }
             if(targetType == MultipartFileHandler.class){
                 ObjectMapper mapper = new ObjectMapper();
-                System.out.println(parameters.get(param));
                 MultipartFileHandler fileHandler = mapper.readValue(parameters.get(param),MultipartFileHandler.class);
                 return fileHandler;
             }

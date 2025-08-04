@@ -22,6 +22,7 @@ import jakarta.servlet.http.Part;
 import mg.itu.prom16.execption.MyExeption;
 import mg.itu.prom16.utilities.Function;
 import mg.itu.prom16.utilities.Mapping;
+import mg.itu.prom16.utilities.MimeUtils;
 import mg.itu.prom16.utilities.ModelView_Y;
 import mg.itu.prom16.utilities.MultipartFileHandler;
 import mg.itu.prom16.utilities.MySession;
@@ -75,14 +76,16 @@ public class FrontController extends HttpServlet{
 
     protected void processRequest(HttpServletRequest req,HttpServletResponse resp) throws ServletException,IOException{
         resp.setContentType("text/html");
-        PrintWriter out = resp.getWriter();
+        
         
         if(!initMyExeptions.isEmpty()){
+            PrintWriter out = resp.getWriter();
             for (MyExeption myExeption : initMyExeptions) {
                 resp.setStatus(myExeption.getStatusCode()); // Définit le statut HTTP
                 String error = Function.generateErrorPage(myExeption,myExeption.getStatusCode());
                 out.println(error);
             }
+            out.close(); // Ferme le flux de sortie
             return;
         }
        
@@ -97,7 +100,6 @@ public class FrontController extends HttpServlet{
         HashMap<String,String> parameterValue = new HashMap<>();
         while (parameterNames.hasMoreElements()) {
             String paramName = parameterNames.nextElement();
-            System.out.println("from req.getParameterNames() "+paramName);
             parameterValue.put(paramName, req.getParameter(paramName));
         }
 
@@ -110,14 +112,14 @@ public class FrontController extends HttpServlet{
                 if (part.getSubmittedFileName() != null) {
                     try {
                         String paraName = part.getName();
-                        System.out.println("from req.getParts() "+paraName);
                         MultipartFileHandler fileHandler = new MultipartFileHandler(part);
                         String jsonFile =  mapper.writeValueAsString(fileHandler);
-                        System.out.println(jsonFile);
                         parameterValue.put(paraName,jsonFile);
                     } catch (IOException e) {
+                        PrintWriter out = resp.getWriter();
                         resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
                         out.println(Function.generateErrorPage(e, HttpServletResponse.SC_BAD_REQUEST));
+                        out.close(); // Ferme le flux de sortie
                     }
                 }
             }
@@ -125,17 +127,20 @@ public class FrontController extends HttpServlet{
 
        
         if(listeUrl.length < 3){
+            PrintWriter out = resp.getWriter();
             out.println("choisir le controller");
             System.out.println("findController");
+            out.close(); // Ferme le flux de sortie
         }
         else{
             String key = req.getAttribute("METHOD") != null ? url+"/"+req.getAttribute("METHOD").toString() : url+"/"+req.getMethod();
             Mapping m = urlpattern.get(key);
             if(m == null){
+                PrintWriter out = resp.getWriter();
                 MyExeption ex = new MyExeption("Tsy misy ilay url/methode "+key, 404);
                 resp.setStatus(ex.getStatusCode()); // Définit le statut HTTP
                 out.println(Function.generateErrorPage(ex, ex.getStatusCode()));
-
+                out.close(); // Ferme le flux de sortie
             }
             else{
                 try { 
@@ -150,7 +155,11 @@ public class FrontController extends HttpServlet{
                      * If the method is Annoted by RestAPI
                      */
                     if(Function.isMethodAnnotedByRestAPI(method)){
+                        resp.setContentType("application/json"); // Définit le type de contenu de la réponse
+                        resp.setCharacterEncoding("UTF-8"); // Définit l'encodage de la réponse
+                        PrintWriter out = resp.getWriter();
                         if(val instanceof ModelView_Y){
+                            resp.setContentType("application/json"); // Définit le type de contenu de la réponse
                             ModelView_Y modelView_Y = (ModelView_Y) val;
                             String json = mapper.writeValueAsString(modelView_Y.getData());
                             out.println(json);
@@ -158,6 +167,7 @@ public class FrontController extends HttpServlet{
                         else{
                             out.println(mapper.writeValueAsString(val));
                         }
+                        out.close(); // Ferme le flux de sortie
                     }
                     /*
                      * If the method is not annoted by restAPI
@@ -165,7 +175,9 @@ public class FrontController extends HttpServlet{
 
                     if(!Function.isMethodAnnotedByRestAPI(m.getMethod())){
                         if(val instanceof String){
+                            PrintWriter out = resp.getWriter();
                             out.println(val); // Utilisez out.println pour envoyer la réponse au client
+                            out.close(); // Ferme le flux de sortie
                         }
                         if(val instanceof ModelView_Y){
                             ModelView_Y modelView_Y = (ModelView_Y) val;
@@ -174,26 +186,40 @@ public class FrontController extends HttpServlet{
                             }
                             req.getRequestDispatcher("/"+modelView_Y.getUrl()).forward(req, resp);
                         }
-                       
+                        if(val instanceof MultipartFileHandler){
+                            MultipartFileHandler file = (MultipartFileHandler) val;
+                            String fileName = file.getFilename();
+                            String contentTypeForResponse = MimeUtils.getMimeType(fileName);
+                            resp.setContentType(contentTypeForResponse); // Définit le type de contenu de la réponse
+                            resp.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
+                            byte[] fileContent = file.getContent(); 
+                            resp.getOutputStream().write(fileContent); // Écrit le contenu du fichier dans la réponse
+                            resp.getOutputStream().flush(); // Assurez-vous de vider le flux après l'écriture
+                            resp.getOutputStream().close(); // Ferme le flux de sortie
+
+                        }
                         // si Tsy String na ModelView_Y
                         if(!(val instanceof ModelView_Y) && !(val instanceof String)){
+                            PrintWriter out = resp.getWriter();
                             out.print("Na String na ModelView_Y ny class ampiasaina");
+                            out.close(); // Ferme le flux de sortie
                         }
 
 
                     }
                 } 
                 catch (MyExeption ex) {
+                    PrintWriter out = resp.getWriter();
                     // Erreur personnalisée
                     resp.setStatus(ex.getStatusCode()); // Définit le statut HTTP
                     out.println(Function.generateErrorPage(ex, ex.getStatusCode()));
                 } catch (Exception e) {
+                    PrintWriter out = resp.getWriter();
                     // Capture les autres exceptions
                     resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR); // Définit le statut 500
                     out.println(Function.generateErrorPage(e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR));
+                    out.close(); // Ferme le flux de sortie
                     e.printStackTrace(); // Log dans la console pour le débogage
-                } finally {
-                    out.close(); // Ferme le PrintWriter
                 }
             }
         }
